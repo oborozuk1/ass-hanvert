@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ass-hanvert"
+dynamic = ["version"]
+description = "ASS subtitle Simplified/Traditional Chinese conversion tool"
+readme = "README.md"
+keywords = ["subtitle", "ass"]
+license = {text = "MIT License"}
+requires-python = ">=3.12"
+authors = [
+    {name = "Oborozuki"}
+]
+dependencies = [
+    "light-ass>=0.2.1",
+    "diff-match-patch",
+    "requests",
+    "openai",
+    "OpenCC",
+]
+
+[project.scripts]
+ass-hanvert = "ass_hanvert.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/oborozuk1/ass-hanvert"
+Repository = "https://github.com/oborozuk1/ass-hanvert"
+Issues = "https://github.com/oborozuk1/ass-hanvert/issues"
+
+[tool.hatch.version]
+path = "ass_hanvert/__init__.py"
