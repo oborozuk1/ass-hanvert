@@ -91,6 +91,8 @@ Built-in converters:
 | Name | Description |
 |------|-------------|
 | FHJ-S | Fanhuaji - Simplified |
+| FHJ-CH | Fanhuaji - China |
+| FHJ-WS | Fanhuaji - Wiki Simplified |
 | OpenCC-S | OpenCC - Simplified |
 | OpenCC-HKS | OpenCC - Hong Kong to Simplified |
 | OpenCC-TWS | OpenCC - Taiwan to Simplified |

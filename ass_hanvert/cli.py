@@ -18,6 +18,8 @@ CONVERTER_MAP: dict[str, Converter] = {
     "FHJ-TW": FanhuajiConverter.Taiwan,
     "FHJ-WT": FanhuajiConverter.WikiTraditional,
     "FHJ-S": FanhuajiConverter.Simplified,
+    "FHJ-CH": FanhuajiConverter.China,
+    "FHJ-WS": FanhuajiConverter.WikiSimplified,
     "OpenCC-T": OpenCCConverter.Traditional,
     "OpenCC-HK": OpenCCConverter.HongKong,
     "OpenCC-TW": OpenCCConverter.Taiwan,
