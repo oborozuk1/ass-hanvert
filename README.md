@@ -58,7 +58,7 @@ ass-hanvert -c FHJ-TW --ref-converter OpenCC-S --font-mapping fonts.json --cache
 
 | 参数 | 说明                        | 默认值 |
 |------|---------------------------|--------|
-| `files` | 要转换的 ASS 字幕文件（支持多个文件和通配符） | 必填 |
+| `files` | 要转换的 ASS 字幕文件（支持多个文件） | 必填 |
 | `-c, --converter` | 转换器名称，见下方列表               | FHJ-TW |
 | `--ref-converter` | 参考转换器，若省略则根据主转换器方向自动选择    | 自动 |
 | `--suffix` | 输出文件后缀，插入在 `.ass` 之前      | `cht`（简转繁）/ `chs`（繁转简） |
