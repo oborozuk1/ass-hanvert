@@ -17,9 +17,11 @@ dependencies = [
     "light-ass>=0.2.1",
     "diff-match-patch",
     "requests",
-    "openai",
     "OpenCC",
 ]
+
+[project.optional-dependencies]
+openai = ["openai"]
 
 [project.scripts]
 ass-hanvert = "ass_hanvert.__main__:main"
