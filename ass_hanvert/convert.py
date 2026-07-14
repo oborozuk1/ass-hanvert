@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 from diff_match_patch import diff_match_patch
@@ -42,28 +43,41 @@ class Line:
         )
 
 
-def collect_nodes(line: Line):
+def collect_nodes(
+    line: Line,
+    skip_styles: Iterable[str] = ("JP", "JA"),
+    skip_styles_exact: Iterable[str] = (),
+):
     current_style = line.event.style
     nodes = []
     for node in line.segments:
         if isinstance(node, ResetStyleTag):
             current_style = node.value or line.event.style
         elif isinstance(node, TextNode):
-            if not node.text or "JP" in current_style or "JA" in current_style:
+            if not node.text:
+                continue
+            if any(tok in current_style for tok in skip_styles):
+                continue
+            if any(current_style == tok for tok in skip_styles_exact):
                 continue
             nodes.append(node)
     line.nodes_to_convert = nodes
     line.original_text = "".join(node.text for node in nodes)
 
 
-def collect_lines(lines: list[Line], skip_comment: bool = True) -> list[Line]:
+def collect_lines(
+    lines: list[Line],
+    skip_comment: bool = True,
+    skip_styles: Iterable[str] = ("JP", "JA"),
+    skip_styles_exact: Iterable[str] = (),
+) -> list[Line]:
     result = []
     for line in lines:
         if skip_comment and line.event.comment:
             continue
         if not _CJK_RE.search(line.event.text_stripped):
             continue
-        collect_nodes(line)
+        collect_nodes(line, skip_styles, skip_styles_exact)
         if line.nodes_to_convert:
             result.append(line)
     return result
@@ -316,6 +330,8 @@ def convert_ass(
     ref_converter: Converter | None = None,
     *,
     skip_comment: bool = True,
+    skip_styles: Iterable[str] = ("JP", "JA"),
+    skip_styles_exact: Iterable[str] = (),
     deduplicate: bool = True,
     sort_events: bool = True,
     cache_path: str | None = None,
@@ -334,7 +350,7 @@ def convert_ass(
     config_md5 = get_md5(config)
 
     events = [Line.from_event(event) for event in document.events]
-    lines = collect_lines(events, skip_comment)
+    lines = collect_lines(events, skip_comment, skip_styles, skip_styles_exact)
     if sort_events:
         lines.sort(key=lambda line: (line.event.start, line.event.text_stripped))
     if deduplicate:
