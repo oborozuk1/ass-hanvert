@@ -69,6 +69,9 @@ ass-hanvert -c FHJ-TW --ref-converter OpenCC-T --font-mapping fonts.json --cache
 | `--pre-replace` | 前置替换列表 JSON 文件路径          | 无 |
 | `--post-replace` | 后置替换列表 JSON 文件路径          | 无 |
 | `--protected-patterns` | 保护模式 JSON 文件路径（正则表达式列表）   | 无 |
+| `--skip-styles` | 跳过的样式名子字符串（逗号分隔）       | `JP,JA` |
+| `--skip-styles-exact` | 跳过的精确样式名（逗号分隔）          | 无 |
+| `--no-skip-inline-styles` | 不跳过行内覆盖样式（`\r` 标签切换的样式） | 跳过 |
 
 内置转换器：
 

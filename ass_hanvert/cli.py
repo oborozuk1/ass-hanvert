@@ -108,6 +108,21 @@ def main() -> None:
         default=None,
         help="Protected patterns JSON file path (list of regexes)",
     )
+    parser.add_argument(
+        "--skip-styles",
+        default="JP,JA",
+        help="Comma-separated style substrings to skip (default: JP,JA)",
+    )
+    parser.add_argument(
+        "--skip-styles-exact",
+        default="",
+        help="Comma-separated exact style names to skip (default: none)",
+    )
+    parser.add_argument(
+        "--no-skip-inline-styles",
+        action="store_true",
+        help="Do not skip inline override styles",
+    )
 
     args = parser.parse_args()
 
@@ -117,6 +132,8 @@ def main() -> None:
     pre_replace = load_json(args.pre_replace)
     post_replace = load_json(args.post_replace)
     protected_patterns = load_json(args.protected_patterns)
+    skip_styles = [s for s in args.skip_styles.split(",") if s] if args.skip_styles else ()
+    skip_styles_exact = [s for s in args.skip_styles_exact.split(",") if s] if args.skip_styles_exact else ()
 
     if args.suffix is not None:
         suffix = args.suffix
@@ -145,6 +162,9 @@ def main() -> None:
             converter=converter,
             ref_converter=ref_converter,
             skip_comment=not args.no_skip_comment,
+            skip_styles=skip_styles,
+            skip_styles_exact=skip_styles_exact,
+            skip_inline_styles=not args.no_skip_inline_styles,
             deduplicate=not args.no_deduplicate,
             sort_events=not args.no_sort,
             cache_path=cache_path,
