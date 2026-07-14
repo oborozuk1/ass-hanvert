@@ -73,6 +73,8 @@ def collect_lines(
 ) -> list[Line]:
     result = []
     for line in lines:
+        if "Hanvert: Skip" in line.event.effect:
+            continue
         if skip_comment and line.event.comment:
             continue
         if not _CJK_RE.search(line.event.text_stripped):
