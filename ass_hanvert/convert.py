@@ -315,7 +315,8 @@ def restore_cache(lines: list[Line], path: str, md5: str) -> None:
 
 
 def write_cache(lines: list[Line], path: str, md5: str) -> None:
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    if dir_part := os.path.dirname(path):
+        os.makedirs(dir_part, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         f.write(f"# config md5: {md5}\n")
         f.write("".join(f"{line.original_text}\t{line.converted_text}\n" for line in lines))
