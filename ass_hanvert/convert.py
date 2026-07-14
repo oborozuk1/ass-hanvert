@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import difflib
 import hashlib
 import json
 import os
@@ -20,14 +19,15 @@ _CJK_RE = re.compile(r"[\u4e00-\u9fa5]")
 
 tag_parser = TagParser([DrawingModeTag, DrawingBaselineOffsetTag, PositionTag, FontNameTag, ResetStyleTag])
 
-
 _DMP = diff_match_patch()
+
 
 @dataclass
 class Line:
     event: Dialog
     segments: ParsedLine
-    original_text: str
+    original_text: str | None = None
+    nodes_to_convert: list[TextNode] | None = None
     converted_text: str | None = None
     ref_text: str | None = None
     need_verify: bool = False
@@ -39,8 +39,21 @@ class Line:
         return cls(
             event=event,
             segments=segments,
-            original_text=segments.get_plain_text(),
         )
+
+
+def collect_nodes(line: Line):
+    current_style = line.event.style
+    nodes = []
+    for node in line.segments:
+        if isinstance(node, ResetStyleTag):
+            current_style = node.value or line.event.style
+        elif isinstance(node, TextNode):
+            if not node.text or "JP" in current_style or "JA" in current_style:
+                continue
+            nodes.append(node)
+    line.nodes_to_convert = nodes
+    line.original_text = "".join(node.text for node in nodes)
 
 
 def collect_lines(lines: list[Line], skip_comment: bool = True) -> list[Line]:
@@ -48,11 +61,11 @@ def collect_lines(lines: list[Line], skip_comment: bool = True) -> list[Line]:
     for line in lines:
         if skip_comment and line.event.comment:
             continue
-        if "JP" in line.event.style or "JA" in line.event.style:
+        if not _CJK_RE.search(line.event.text_stripped):
             continue
-        if not _CJK_RE.search(line.original_text):
-            continue
-        result.append(line)
+        collect_nodes(line)
+        if line.nodes_to_convert:
+            result.append(line)
     return result
 
 
@@ -97,8 +110,7 @@ def add_ref_text(
 ) -> None:
     ref_lines = []
     for line in lines:
-        nodes = [node for node in line.segments.parts if isinstance(node, TextNode) and node.text]
-        if len(nodes) > 1:
+        if len(line.nodes_to_convert) > 1:
             ref_lines.append(line)
         else:
             line.ref_text = line.converted_text
@@ -109,7 +121,7 @@ def add_ref_text(
 
 
 def align_whitespace(str_a: str, str_b: str) -> str:
-    lead_part = str_b[:-len(str_b.lstrip())]
+    lead_part = str_b[: -len(str_b.lstrip())]
     trail_part = str_b[len(str_b.rstrip()) :]
     return lead_part + str_a.strip() + trail_part
 
@@ -161,9 +173,7 @@ def _regroup(line: Line, converted_text: str, ref_text: str) -> bool:
 
     i = 0
     pos = 0
-    for segment in line.segments:
-        if not isinstance(segment, TextNode):
-            continue
+    for segment in line.nodes_to_convert:
         max_pos = pos + len(segment.text)
         texts = []
         while pos < max_pos:
@@ -186,7 +196,7 @@ def _regroup(line: Line, converted_text: str, ref_text: str) -> bool:
 
 
 def regroup(line: Line, converted_text: str, ref_text: str) -> None:
-    if len(line.segments.parts) == 1:
+    if len(line.segments) == 1:
         line.event.text = converted_text
         return
 
