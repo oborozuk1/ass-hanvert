@@ -14,17 +14,19 @@
 
 ### 功能特性
 
-1. 跳過日文字幕（透過樣式名稱識別，暫不支援 `\r`）
+1. 跳過日文字幕（透過樣式名稱識別，可自訂）
 2. 跳過非中文文字
 3. 轉換時忽略標籤和換行符號，轉換完成後恢復原始格式
 4. 轉換前後長度發生變化時顯示警告
 5. 內建多種轉換器（見下方列表）
 6. 轉換結果快取，減少重複工作
+7. 支援透過 Effect 欄位標記跳過特定行
 
 ## 安裝
 
 ```bash
 pip install ass-hanvert
+pip install "ass-hanvert[openai]"  # 如果希望使用 OpenAIConverter
 ```
 
 ## 使用方法
@@ -32,17 +34,14 @@ pip install ass-hanvert
 ### 命令列（CLI）
 
 ```bash
-# 基本用法 - 轉換單一檔案（預設：簡轉繁，繁化姬-台灣）
-ass-hanvert input.ass
+# 基本用法 - 轉換單一/多個檔案（預設：簡轉繁，繁化姬-台灣）
+ass-hanvert input1.ass input2.ass
 
 # 指定轉換器
 ass-hanvert -c OpenCC-TW input.ass
 
 # 繁轉簡轉換
 ass-hanvert -c OpenCC-S input.ass
-
-# 批次處理多個檔案
-ass-hanvert input1.ass input2.ass
 
 # 使用快取目錄（省去重複轉換）
 ass-hanvert --cache ./cache input.ass
@@ -119,6 +118,34 @@ convert_ass(doc, converter=OpenCCConverter.Simplified)
 
 # 儲存
 doc.save("output.cht.ass")
+```
+
+#### 跳過特定行
+
+可透過以下方式自訂跳過哪些行：
+
+**樣式名稱**
+
+預設跳過樣式名稱包含 `JP` 或 `JA` 的行。可透過 `skip_styles` 自訂，也可用 `skip_styles_exact` 做精確匹配：
+
+```python
+# 自訂子字串匹配
+convert_ass(doc, skip_styles=("JP", "JA", "EN"))
+
+# 僅精確匹配樣式名稱（不做子字串匹配）
+convert_ass(doc, skip_styles=(), skip_styles_exact=("JP", "JA"))
+
+# 兩者可同時使用
+convert_ass(doc, skip_styles=("JP",), skip_styles_exact=("EN-Lit",))
+```
+
+**Effect 欄位標記**
+
+在 ASS 檔案中給行的 Effect 欄位填入 `Hanvert: Skip` 即可跳過該行（子字串匹配，可與其他 Effect 共存）：
+
+```
+Dialogue: 0,0:00:01.00,0:00:03.00,Default,,0,0,0,Hanvert: Skip,這段不會被轉換
+Dialogue: 0,0:00:01.00,0:00:03.00,Default,,0,0,0,Karaoke; Hanvert: Skip,可與其他 Effect 共存
 ```
 
 ## 致謝
