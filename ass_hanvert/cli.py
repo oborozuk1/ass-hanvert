@@ -8,6 +8,7 @@ from light_ass import Document
 
 from ass_hanvert import (
     Converter,
+    ConvertStats,
     FanhuajiConverter,
     OpenCCConverter,
     convert_ass,
@@ -56,6 +57,37 @@ def expand_files(patterns: list[str]) -> list[Path]:
         else:
             result.append(p)
     return result
+
+
+def format_stats(stats: ConvertStats) -> str:
+    parts = [f"{stats.total_events} events", f"{stats.converted_lines} converted"]
+
+    skipped = stats.skipped
+    total_skipped = skipped.style + skipped.comment + skipped.no_cjk + skipped.effect
+    if total_skipped:
+        detail = ", ".join(
+            f"{name} {count}"
+            for name, count in (
+                ("style", skipped.style),
+                ("comment", skipped.comment),
+                ("no-cjk", skipped.no_cjk),
+                ("effect", skipped.effect),
+            )
+            if count
+        )
+        parts.append(f"{total_skipped} skipped ({detail})")
+
+    if stats.deduplicated:
+        parts.append(f"{stats.deduplicated} dedup")
+    if stats.length_changed:
+        parts.append(f"{stats.length_changed} len-diff")
+
+    cache_total = stats.cache_hits + stats.cache_misses
+    if cache_total:
+        pct = stats.cache_hits * 100 // cache_total
+        parts.append(f"cache {pct}% ({stats.cache_hits}/{cache_total})")
+
+    return " | ".join(parts)
 
 
 def main() -> None:
@@ -187,7 +219,7 @@ def main() -> None:
             cache_path = str(cache_dir / f"{input_path.stem}.txt")
 
         doc = Document.load(str(input_path))
-        convert_ass(
+        stats = convert_ass(
             doc,
             converter=converter,
             ref_converter=ref_converter,
@@ -205,6 +237,7 @@ def main() -> None:
         )
         doc.save(str(output_path))
         print(f"Saved: {output_path}")
+        print(f"Stats: {format_stats(stats)}")
 
 
 if __name__ == "__main__":

@@ -118,7 +118,8 @@ from ass_hanvert import OpenCCConverter
 convert_ass(doc, converter=OpenCCConverter.Taiwan)
 
 # 繁转简
-convert_ass(doc, converter=OpenCCConverter.Simplified)
+stats = convert_ass(doc, converter=OpenCCConverter.Simplified)
+print(stats)
 
 # 保存
 doc.save("output.cht.ass")

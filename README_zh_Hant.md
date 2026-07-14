@@ -115,7 +115,8 @@ convert_ass(doc)
 # 或指定轉換器（簡轉繁）
 from ass_hanvert import OpenCCConverter
 
-convert_ass(doc, converter=OpenCCConverter.Taiwan)
+stats = convert_ass(doc, converter=OpenCCConverter.Taiwan)
+print(stats)
 
 # 繁轉簡
 convert_ass(doc, converter=OpenCCConverter.Simplified)

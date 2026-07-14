@@ -5,7 +5,7 @@ import json
 import os
 import re
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from diff_match_patch import diff_match_patch
 from light_ass import Dialog, Document, TagParser
@@ -41,6 +41,25 @@ class Line:
             event=event,
             segments=segments,
         )
+
+
+@dataclass
+class SkipStats:
+    style: int = 0
+    comment: int = 0
+    no_cjk: int = 0
+    effect: int = 0
+
+
+@dataclass
+class ConvertStats:
+    total_events: int = 0
+    converted_lines: int = 0
+    skipped: SkipStats = field(default_factory=SkipStats)
+    deduplicated: int = 0
+    length_changed: int = 0
+    cache_hits: int = 0
+    cache_misses: int = 0
 
 
 def _should_skip_style(style: str, skip_styles: Iterable[str], skip_styles_exact: Iterable[str]) -> bool:
@@ -81,28 +100,36 @@ def collect_lines(
     skip_styles: Iterable[str] = ("JP", "JA"),
     skip_styles_exact: Iterable[str] = (),
     skip_inline_styles: bool = True,
-) -> list[Line]:
+) -> tuple[list[Line], SkipStats]:
     result = []
+    stats = SkipStats()
     for line in lines:
         if "Hanvert: Skip" in line.event.effect:
+            stats.effect += 1
             continue
         if skip_comment and line.event.comment:
+            stats.comment += 1
             continue
         if not _CJK_RE.search(line.event.text_stripped):
+            stats.no_cjk += 1
             continue
         collect_nodes(line, skip_styles, skip_styles_exact, skip_inline_styles)
         if line.nodes_to_convert:
             result.append(line)
-    return result
+        else:
+            stats.style += 1
+    return result, stats
 
 
-def deduplicated_lines(lines: list[Line]) -> None:
+def deduplicated_lines(lines: list[Line]) -> int:
     result = []
     dup_lines = []
     prev_line: Line | None = None
+    dedup_count = 0
     for line in lines:
         if prev_line and line.original_text == prev_line.original_text:
             dup_lines.append(line)
+            dedup_count += 1
             continue
         result.append(line)
         if prev_line and dup_lines:
@@ -112,6 +139,7 @@ def deduplicated_lines(lines: list[Line]) -> None:
     if dup_lines:
         prev_line.dup_lines = dup_lines
     lines[:] = result
+    return dedup_count
 
 
 def convert_lines(
@@ -222,10 +250,10 @@ def _regroup(line: Line, converted_text: str, ref_text: str) -> bool:
     return length_changed
 
 
-def regroup(line: Line, converted_text: str, ref_text: str) -> None:
+def regroup(line: Line, converted_text: str, ref_text: str) -> bool:
     if len(line.segments) == 1:
         line.event.text = converted_text
-        return
+        return False
 
     event = line.event
     length_changed = _regroup(line, converted_text, ref_text)
@@ -235,15 +263,20 @@ def regroup(line: Line, converted_text: str, ref_text: str) -> None:
             event.effect += "; Hanvert: Len diff"
         else:
             event.effect = "Hanvert: Len diff"
+    return length_changed
 
 
-def apply_conversions(lines: list[Line]) -> None:
+def apply_conversions(lines: list[Line]) -> int:
+    length_changed = 0
     for line in lines:
         converted_text = align_whitespace(line.converted_text, line.original_text)
-        regroup(line, converted_text, line.ref_text)
+        if regroup(line, converted_text, line.ref_text):
+            length_changed += 1
         if line.dup_lines:
             for dup_line in line.dup_lines:
-                regroup(dup_line, converted_text, line.ref_text)
+                if regroup(dup_line, converted_text, line.ref_text):
+                    length_changed += 1
+    return length_changed
 
 
 def apply_font_mapping(document: Document, lines: list[Line], font_mapping: dict[str, str]) -> None:
@@ -354,7 +387,7 @@ def convert_ass(
     pre_replace: dict[str, str] | None = None,
     post_replace: dict[str, str] | None = None,
     protected_patterns: list[str] | None = None,
-) -> None:
+) -> ConvertStats:
     converter, ref_converter = resolve_converter(converter, ref_converter)
 
     config = converter.__dict__ | {
@@ -365,21 +398,33 @@ def convert_ass(
     config_md5 = get_md5(config)
 
     events = [Line.from_event(event) for event in document.events]
-    lines = collect_lines(events, skip_comment, skip_styles, skip_styles_exact, skip_inline_styles)
+    lines, skip_stats = collect_lines(events, skip_comment, skip_styles, skip_styles_exact, skip_inline_styles)
+
+    stats = ConvertStats(
+        total_events=len(document.events),
+        converted_lines=len(lines),
+        skipped=skip_stats,
+    )
+
     if sort_events:
         lines.sort(key=lambda line: (line.event.start, line.event.text_stripped))
     if deduplicate:
-        deduplicated_lines(lines)
+        stats.deduplicated = deduplicated_lines(lines)
+        stats.converted_lines = len(lines)
 
     if cache_path is not None:
         restore_cache(lines, cache_path, config_md5)
+        stats.cache_hits = sum(1 for line in lines if line.converted_text is not None)
+        stats.cache_misses = sum(1 for line in lines if line.converted_text is None)
 
     convert_lines(lines, converter, pre_replace, post_replace, protected_patterns)
     add_ref_text(lines, ref_converter)
-    apply_conversions(lines)
+    stats.length_changed = apply_conversions(lines)
 
     if alt_fonts is not None:
         apply_font_mapping(document, events, alt_fonts)
 
     if cache_path is not None:
         write_cache(lines, cache_path, config_md5)
+
+    return stats
