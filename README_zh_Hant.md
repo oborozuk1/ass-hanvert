@@ -51,7 +51,7 @@ ass-hanvert --cache ./cache input.ass
 ass-hanvert --suffix traditional input.ass
 
 # 完整範例：指定轉換器、參考轉換器、字型名稱映射及快取
-ass-hanvert -c FHJ-TW --ref-converter OpenCC-S --font-mapping fonts.json --cache ./cache input.ass
+ass-hanvert -c FHJ-TW --ref-converter OpenCC-T --font-mapping fonts.json --cache ./cache input.ass
 ```
 
 參數說明：
