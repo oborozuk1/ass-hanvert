@@ -37,11 +37,11 @@ pip install "ass-hanvert[openai]"  # 如果希望使用 OpenAIConverter
 # 基本用法 - 转换单个/多个文件（默认：简转繁，繁化姬-台湾）
 ass-hanvert input1.ass input2.ass
 
+# 转换整个目录下的所有 .ass 文件，输出到指定目录
+ass-hanvert --output-dir ./output ./subtitles/
+
 # 指定转换器
 ass-hanvert -c OpenCC-TW input.ass
-
-# 繁转简转换
-ass-hanvert -c OpenCC-S input.ass
 
 # 使用缓存目录（省去重复转换）
 ass-hanvert --cache ./cache input.ass
@@ -57,10 +57,11 @@ ass-hanvert -c FHJ-TW --ref-converter OpenCC-T --font-mapping fonts.json --cache
 
 | 参数 | 说明                        | 默认值 |
 |------|---------------------------|--------|
-| `files` | 要转换的 ASS 字幕文件（支持多个文件） | 必填 |
+| `files` | 要转换的 ASS 字幕文件、目录或通配符模式（支持多个） | 必填 |
 | `-c, --converter` | 转换器名称，见下方列表               | FHJ-TW |
 | `--ref-converter` | 参考转换器，若省略则根据主转换器方向自动选择    | 自动 |
 | `--suffix` | 输出文件后缀，插入在 `.ass` 之前      | `cht`（简转繁）/ `chs`（繁转简） |
+| `--output-dir` | 输出目录，不指定则输出到各源文件旁      | 源文件旁 |
 | `--cache` | 缓存目录路径                    | 无 |
 | `--no-skip-comment` | 转换时不跳过注释行                 | 跳过 |
 | `--no-deduplicate` | 转换时不去重                    | 去重 |

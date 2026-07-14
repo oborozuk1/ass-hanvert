@@ -1,4 +1,5 @@
 import argparse
+import glob
 import json
 import sys
 from pathlib import Path
@@ -37,8 +38,24 @@ def load_json(path: str | None) -> dict | list | None:
         return json.load(f)
 
 
-def make_output_path(input_path: Path, suffix: str) -> Path:
-    return input_path.with_name(f"{input_path.stem}.{suffix}.ass")
+def make_output_path(input_path: Path, suffix: str, output_dir: Path | None = None) -> Path:
+    path = input_path.with_name(f"{input_path.stem}.{suffix}.ass")
+    if output_dir is not None:
+        path = output_dir / path.name
+    return path
+
+
+def expand_files(patterns: list[str]) -> list[Path]:
+    result: list[Path] = []
+    for pattern in patterns:
+        p = Path(pattern)
+        if p.is_dir():
+            result.extend(sorted(p.glob("*.ass")))
+        elif "*" in pattern or "?" in pattern or "[" in pattern:
+            result.extend(Path(m) for m in sorted(glob.glob(pattern)))
+        else:
+            result.append(p)
+    return result
 
 
 def main() -> None:
@@ -48,7 +65,7 @@ def main() -> None:
     parser.add_argument(
         "files",
         nargs="+",
-        help="ASS subtitle file(s) to convert",
+        help="ASS subtitle file(s), directories, or glob patterns to convert",
     )
     parser.add_argument(
         "-c",
@@ -67,6 +84,11 @@ def main() -> None:
         "--suffix",
         default=None,
         help="Output file suffix inserted before .ass (default: cht for S2T, chs for T2S)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Output directory (default: alongside each input file)",
     )
     parser.add_argument(
         "--cache",
@@ -142,13 +164,21 @@ def main() -> None:
     else:
         suffix = "chs"
 
-    for file_str in args.files:
-        input_path = Path(file_str)
+    output_dir = Path(args.output_dir) if args.output_dir else None
+    if output_dir is not None:
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    input_files = expand_files(args.files)
+    if not input_files:
+        print("Error: no input files found", file=sys.stderr)
+        sys.exit(1)
+
+    for input_path in input_files:
         if not input_path.exists():
             print(f"Error: file not found - {input_path}", file=sys.stderr)
             continue
 
-        output_path = make_output_path(input_path, suffix)
+        output_path = make_output_path(input_path, suffix, output_dir)
 
         cache_path: str | None = None
         if args.cache is not None:
