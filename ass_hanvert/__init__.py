@@ -3,7 +3,7 @@ from .converter import Converter, Direction
 from .fanhuaji import FanhuajiConverter
 from .opencc import OpenCCConverter
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 __all__ = [
     "Converter",
