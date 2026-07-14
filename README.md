@@ -1,101 +1,101 @@
 # ass-hanvert
 
-Simple ASS subtitle Simplified/Traditional Chinese conversion tool
+简易 ASS 字幕简繁体转换工具
 
-## About
+## 关于
 
-### Motivation
+### 动机
 
-Popular conversion tools like Fanhuaji have decent accuracy and can detect subtitle formats for smart conversion, but they fail with karaoke-tagged subtitles. For example, `苹{\k}果` is incorrectly converted to `苹{\k}果` instead of the correct `蘋{\k}果`.
+目前主流的繁转换工具（如繁化姬）虽然转换精度尚可，且能检测字幕格式进行智能转换，但在处理带有标签的字幕时会出错。例如，`苹{\k}果` 会被错误地转换为 `苹{\k}果`，而正确的结果应该是 `蘋{\k}果`。
 
-OpenCC, on the other hand, doesn't recognize subtitle formats, causing unwanted conversions (e.g., to fonts or Japanese text).
+而 OpenCC 则不支持识别字幕格式，容易造成不必要的转换（如转换到字体名称或日语文字等问题）。
 
-This project aims to solve these problems by implementing ASS subtitle conversion in Python, supporting multiple converters with good extensibility.
+本项目旨在通过 Python 实现 ASS 字幕转换，支持多种转换器，以解决上述问题。
 
-### Features
+### 功能特性
 
-1. Skip Japanese subtitles (identified by style name, `\r` not yet supported)
-2. Skip non-Chinese text
-3. Ignore tags and line breaks during conversion, then restore original formatting
-4. Display a warning if length changes before and after conversion
-5. Multiple built-in converters (see list below)
-6. Conversion result caching to reduce duplicate work
+1. 跳过日文字幕（通过样式名识别，暂不支持 `\r`）
+2. 跳过非中文文本
+3. 转换时忽略标签和换行符，转换完成后恢复原始格式
+4. 转换前后长度发生变化时显示警告
+5. 内置多种转换器（见下方列表）
+6. 转换结果缓存，减少重复工作
 
-## Installation
+## 安装
 
 ```bash
 pip install ass-hanvert
 ```
 
-## Usage
+## 使用方法
 
-### CLI
+### 命令行（CLI）
 
 ```bash
-# Basic usage - convert a single file (default: S2T, Fanhuaji Taiwan)
+# 基本用法 - 转换单个文件（默认：简转繁，繁化姬-台湾）
 ass-hanvert input.ass
 
-# Specify converter
+# 指定转换器
 ass-hanvert -c OpenCC-TW input.ass
 
-# T2S conversion
+# 繁转简转换
 ass-hanvert -c OpenCC-S input.ass
 
-# Batch process multiple files
-ass-hanvert *.ass
+# 批量处理多个文件
+ass-hanvert input1.ass input2.ass
 
-# Use cache directory (speeds up repeated conversions)
+# 使用缓存目录（省去重复转换）
 ass-hanvert --cache ./cache input.ass
 
-# Custom output file suffix
+# 自定义输出文件后缀
 ass-hanvert --suffix traditional input.ass
 
-# Full example: specify converter, reference converter, font mapping, and cache
+# 完整示例：指定转换器、参考转换器、字体名称映射及缓存
 ass-hanvert -c FHJ-TW --ref-converter OpenCC-S --font-mapping fonts.json --cache ./cache input.ass
 ```
 
-Parameters:
+参数说明：
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `files` | ASS subtitle file(s) to convert (supports multiple files and globs) | Required |
-| `-c, --converter` | Converter name, see list below | FHJ-TW |
-| `--ref-converter` | Reference converter, auto-selected based on main converter direction if omitted | Auto |
-| `--suffix` | Output file suffix inserted before `.ass` | `cht` (S2T) / `chs` (T2S) |
-| `--cache` | Cache directory path | None |
-| `--no-skip-comment` | Do not skip comment lines | Skip |
-| `--no-deduplicate` | Do not deduplicate | Deduplicate |
-| `--no-sort` | Do not sort events | Sort by start time |
-| `--font-mapping` | Font mapping JSON file path | None |
-| `--pre-replace` | Pre-replace rules JSON file path | None |
-| `--post-replace` | Post-replace rules JSON file path | None |
-| `--protected-patterns` | Protected patterns JSON file path (list of regexes) | None |
+| 参数 | 说明                        | 默认值 |
+|------|---------------------------|--------|
+| `files` | 要转换的 ASS 字幕文件（支持多个文件和通配符） | 必填 |
+| `-c, --converter` | 转换器名称，见下方列表               | FHJ-TW |
+| `--ref-converter` | 参考转换器，若省略则根据主转换器方向自动选择    | 自动 |
+| `--suffix` | 输出文件后缀，插入在 `.ass` 之前      | `cht`（简转繁）/ `chs`（繁转简） |
+| `--cache` | 缓存目录路径                    | 无 |
+| `--no-skip-comment` | 转换时不跳过注释行                 | 跳过 |
+| `--no-deduplicate` | 转换时不去重                    | 去重 |
+| `--no-sort` | 转换时不对事件排序                 | 按开始时间排序 |
+| `--font-mapping` | 字体名称映射 JSON 文件路径          | 无 |
+| `--pre-replace` | 前置替换列表 JSON 文件路径          | 无 |
+| `--post-replace` | 后置替换列表 JSON 文件路径          | 无 |
+| `--protected-patterns` | 保护模式 JSON 文件路径（正则表达式列表）   | 无 |
 
-Built-in converters:
+内置转换器：
 
-**Simplified to Traditional:**
+**简转繁：**
 
-| Name | Description |
-|------|-------------|
-| FHJ-T | Fanhuaji - Traditional |
-| FHJ-HK | Fanhuaji - Hong Kong |
-| FHJ-TW | Fanhuaji - Taiwan |
-| FHJ-WT | Fanhuaji - Wiki Traditional |
-| OpenCC-T | OpenCC - Traditional |
-| OpenCC-HK | OpenCC - Hong Kong |
-| OpenCC-TW | OpenCC - Taiwan |
-| OpenCC-TWP | OpenCC - Taiwan (with Taiwan-specific idioms) |
+| 名称 | 说明 |
+|------|------|
+| FHJ-T | 繁化姬 - 繁体 |
+| FHJ-HK | 繁化姬 - 香港 |
+| FHJ-TW | 繁化姬 - 台湾 |
+| FHJ-WT | 繁化姬 - 维基繁体 |
+| OpenCC-T | OpenCC - 繁体 |
+| OpenCC-HK | OpenCC - 香港 |
+| OpenCC-TW | OpenCC - 台湾 |
+| OpenCC-TWP | OpenCC - 台湾（含台湾常用语） |
 
-**Traditional to Simplified:**
+**繁转简：**
 
-| Name | Description |
-|------|-------------|
-| FHJ-S | Fanhuaji - Simplified |
-| FHJ-CH | Fanhuaji - China |
-| FHJ-WS | Fanhuaji - Wiki Simplified |
-| OpenCC-S | OpenCC - Simplified |
-| OpenCC-HKS | OpenCC - Hong Kong to Simplified |
-| OpenCC-TWS | OpenCC - Taiwan to Simplified |
+| 名称 | 说明 |
+|------|------|
+| FHJ-S | 繁化姬 - 简体 |
+| FHJ-CH | 繁化姬 - 大陆 |
+| FHJ-WS | 繁化姬 - 维基简体 |
+| OpenCC-S | OpenCC - 简体 |
+| OpenCC-HKS | OpenCC - 香港转简体 |
+| OpenCC-TWS | OpenCC - 台湾转简体 |
 
 ### Python API
 
@@ -103,25 +103,25 @@ Built-in converters:
 from light_ass import Document
 from ass_hanvert import convert_ass
 
-# Load subtitle
+# 加载字幕
 doc = Document.load("input.ass")
 
-# Convert (default: Fanhuaji Taiwan)
+# 转换（默认：繁化姬-台湾）
 convert_ass(doc)
 
-# Or specify a converter (S2T)
+# 或指定转换器（简转繁）
 from ass_hanvert import OpenCCConverter
 
 convert_ass(doc, converter=OpenCCConverter.Taiwan)
 
-# T2S
+# 繁转简
 convert_ass(doc, converter=OpenCCConverter.Simplified)
 
-# Save
+# 保存
 doc.save("output.cht.ass")
 ```
 
-## Credits
+## 致谢
 
-- [Fanhuaji API](http://zhconvert.org/)
+- [繁化姬 API](http://zhconvert.org/)
 - [OpenCC](https://github.com/BYVoid/OpenCC)
